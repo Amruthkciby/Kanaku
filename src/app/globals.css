@@ -1,26 +1,90 @@
 @import "tailwindcss";
 
+/*
+  Kanakku palette — a paper ledger, not a dashboard. Chosen against a South Indian family
+  photography studio whose current tools are a khata book and WhatsApp, not "cream + terracotta +
+  serif hero":
+
+  --color-paper   #F1F0EA  page background: warm-grey paper, cooler than cream so it doesn't
+                            read as the default AI-dashboard cream.
+  --color-ink     #16213A  primary text and display headings: deep indigo-black, like fountain
+                            pen ink on a ledger page.
+  --color-brass   #B8862B  primary accent and calls to action: muted antique brass/gold, drawn
+                            from kasavu and temple jewellery rather than terracotta.
+  --color-maroon  #8C2F39  expense / still-owed / negative states: kasavu saree border red.
+  --color-forest  #2F5233  income / settled / positive states: banana-leaf green.
+  --color-slate   #5B6472  secondary text, borders, muted UI.
+
+  Type pairing:
+  --font-display  Bitter (slab serif) — headings and job/client names. A slab, not a
+                   high-contrast display serif, so it reads like a stamped ledger header rather
+                   than the generic AI hero serif.
+  --font-body     IBM Plex Sans — UI text, labels, nav. Broad script support (useful given
+                   Malayalam names/notes) and more character than the ubiquitous default sans.
+  --font-numeric  IBM Plex Mono — every money figure, always with tabular figures. Money is the
+                   content here; rendering it in a mono face gives it a receipt/ledger feel and
+                   guarantees columns of numbers align.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-paper: #f1f0ea;
+  --color-paper-raised: #ffffff;
+  --color-ink: #16213a;
+  --color-brass: #b8862b;
+  --color-brass-soft: #e9d9b8;
+  --color-maroon: #8c2f39;
+  --color-maroon-soft: #f3dee0;
+  --color-forest: #2f5233;
+  --color-forest-soft: #dde8dc;
+  --color-slate: #5b6472;
+  --color-slate-soft: #dfe0dc;
+  --color-border: #d8d5c9;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-paper: var(--color-paper);
+  --color-paper-raised: var(--color-paper-raised);
+  --color-ink: var(--color-ink);
+  --color-brass: var(--color-brass);
+  --color-brass-soft: var(--color-brass-soft);
+  --color-maroon: var(--color-maroon);
+  --color-maroon-soft: var(--color-maroon-soft);
+  --color-forest: var(--color-forest);
+  --color-forest-soft: var(--color-forest-soft);
+  --color-slate: var(--color-slate);
+  --color-slate-soft: var(--color-slate-soft);
+  --color-border: var(--color-border);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-bitter), Georgia, serif;
+  --font-body: var(--font-plex-sans), system-ui, sans-serif;
+  --font-numeric: var(--font-plex-mono), "Courier New", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+.font-numeric,
+.tabular-nums {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible keyboard focus everywhere — never suppressed. */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
 }

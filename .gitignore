@@ -36,6 +36,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase local dev state
+supabase/.temp
+supabase/.branches
+
+# local verification screenshots (scripts/verify-app.mjs)
+.verify-shots
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

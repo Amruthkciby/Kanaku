@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Netlify Functions on the free plan time out at 10s. Statement files are parsed entirely in the
+# browser (see src/lib/statements) so no server function ever needs to process a large upload —
+# see README "Deployment constraints" before adding any server-side parsing.
