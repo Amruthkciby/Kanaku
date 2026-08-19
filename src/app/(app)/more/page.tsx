@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { SignOutButton } from "@/components/SignOutButton";
 import { TransferForm } from "@/components/accounts/TransferForm";
 import { AddAccountForm } from "@/components/accounts/AddAccountForm";
+import { DrawingForm, CapitalContributionForm } from "@/components/business/DrawingsForms";
 import { formatPaise } from "@/lib/money";
 import Link from "next/link";
 
@@ -80,6 +81,10 @@ export default async function MorePage() {
                 </Link>
               </li>
             </ul>
+            <div className="mt-3 space-y-3">
+              <DrawingForm members={(members ?? []).map((m) => ({ id: m.id, name: m.name }))} />
+              <CapitalContributionForm members={(members ?? []).map((m) => ({ id: m.id, name: m.name }))} />
+            </div>
           </section>
         )}
       </div>
