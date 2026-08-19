@@ -831,7 +831,29 @@ export type Database = {
         Args: { p_job_staff_id: string }
         Returns: number
       }
+      jobs_list_summary: {
+        Args: never
+        Returns: {
+          agreed_amount: number
+          client_name: string
+          collected: number
+          event_date: string
+          job_expenses: number
+          job_id: string
+          staff_agreed_total: number
+          staff_paid_total: number
+          status: string
+          title: string
+        }[]
+      }
       safe_to_spend: { Args: never; Returns: number }
+      soft_delete_job: { Args: { p_id: string }; Returns: undefined }
+      soft_delete_staff: { Args: { p_id: string }; Returns: undefined }
+      soft_delete_staff_payout: {
+        Args: { p_transaction_id: string }
+        Returns: undefined
+      }
+      soft_delete_transaction: { Args: { p_id: string }; Returns: undefined }
       staff_payable_total: { Args: never; Returns: number }
       total_cash_across_accounts: { Args: never; Returns: number }
     }

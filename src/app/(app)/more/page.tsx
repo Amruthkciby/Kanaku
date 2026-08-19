@@ -1,21 +1,25 @@
 import { getCurrentProfile, isOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getAccountBalances } from "@/lib/queries/derived";
 import { PageHeader } from "@/components/PageHeader";
 import { SignOutButton } from "@/components/SignOutButton";
+import { TransferForm } from "@/components/accounts/TransferForm";
+import { AddAccountForm } from "@/components/accounts/AddAccountForm";
+import { formatPaise } from "@/lib/money";
+import Link from "next/link";
 
 export default async function MorePage() {
   const profile = await getCurrentProfile();
+  const owner = isOwner(profile);
   const supabase = await createClient();
 
-  const { data: accounts } = await supabase
-    .from("accounts")
-    .select("id, label, kind")
-    .order("is_primary", { ascending: false });
+  const [{ data: accounts }, { data: members }, balances] = await Promise.all([
+    supabase.from("accounts").select("id, label, kind").order("is_primary", { ascending: false }),
+    supabase.from("household_members").select("id, name").order("name"),
+    getAccountBalances(supabase),
+  ]);
 
-  const { data: members } = await supabase
-    .from("household_members")
-    .select("id, name")
-    .order("name");
+  const balanceByAccount = new Map(balances.map((b) => [b.accountId, b.balance]));
 
   return (
     <div>
@@ -36,10 +40,18 @@ export default async function MorePage() {
             {(accounts ?? []).map((a) => (
               <li key={a.id} className="flex items-center justify-between px-4 py-3">
                 <span className="text-ink">{a.label}</span>
-                <span className="text-sm capitalize text-slate">{a.kind}</span>
+                <span className="font-numeric text-sm text-slate">
+                  {formatPaise(balanceByAccount.get(a.id) ?? 0)}
+                </span>
               </li>
             ))}
           </ul>
+          {owner && (
+            <div className="mt-3 space-y-3">
+              <TransferForm accounts={(accounts ?? []).map((a) => ({ id: a.id, label: a.label }))} />
+              <AddAccountForm members={(members ?? []).map((m) => ({ id: m.id, name: m.name }))} />
+            </div>
+          )}
         </section>
 
         <section>
@@ -53,12 +65,20 @@ export default async function MorePage() {
           </ul>
         </section>
 
-        {isOwner(profile) && (
+        {owner && (
           <section>
             <h2 className="mb-2 text-sm font-medium text-slate">Business</h2>
             <ul className="divide-y divide-border rounded-xl border border-border bg-paper-raised">
-              <li className="px-4 py-3 text-slate">Staff — coming soon</li>
-              <li className="px-4 py-3 text-slate">Statement import — coming soon</li>
+              <li className="px-4 py-3">
+                <Link href="/business/staff" className="text-ink">
+                  Staff
+                </Link>
+              </li>
+              <li className="px-4 py-3">
+                <Link href="/business/import" className="text-ink">
+                  Statement import
+                </Link>
+              </li>
             </ul>
           </section>
         )}
