@@ -39,6 +39,18 @@
   --color-slate: #5b6472;
   --color-slate-soft: #dfe0dc;
   --color-border: #d8d5c9;
+
+  /* Categorical chart palette (dataviz skill, validated: node scripts/validate_palette.js).
+     Distinct from brass/maroon/forest above, which carry fixed semantic meaning (accent,
+     negative, positive) and are never reused as generic per-category chart hues. Fixed order —
+     never reassigned or cycled per filter change. A 7th+ category folds into "Other" (slate). */
+  --chart-1: #b8862b; /* brass */
+  --chart-2: #0f8b72; /* teal */
+  --chart-3: #8b3f94; /* plum */
+  --chart-4: #c24e2a; /* rust */
+  --chart-5: #2e5fa3; /* indigo */
+  --chart-6: #5b7a2e; /* olive */
+  --chart-other: #8b93a1; /* "Other" bucket + grid/axis ink */
 }
 
 @theme inline {

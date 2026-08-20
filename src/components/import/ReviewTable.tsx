@@ -65,8 +65,8 @@ export function ReviewTable({ rows: initialRows, refData }: { rows: StatementTxn
     });
   }
 
-  async function handleCommit(row: StatementTxnRow) {
-    const s = states[row.id];
+  async function handleCommit(row: StatementTxnRow, stateOverride?: RowState) {
+    const s = stateOverride ?? states[row.id];
     setPendingId(row.id);
     setErrorById((e) => ({ ...e, [row.id]: "" }));
 
@@ -105,6 +105,18 @@ export function ReviewTable({ rows: initialRows, refData }: { rows: StatementTxn
     ids.forEach(removeRow);
   }
 
+  const [bulkPatch, setBulkPatch] = useState<Partial<RowState>>({ ledger: "family", kind: "household" });
+
+  async function handleBulkClassify() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+
+    const targets = rows.filter((r) => ids.includes(r.id));
+    await Promise.all(
+      targets.map((row) => handleCommit(row, { ...states[row.id], ...bulkPatch })),
+    );
+  }
+
   if (rows.length === 0) {
     return <p className="rounded-xl border border-dashed border-border p-8 text-center text-slate">All rows reviewed.</p>;
   }
@@ -115,12 +127,57 @@ export function ReviewTable({ rows: initialRows, refData }: { rows: StatementTxn
         <p className="text-sm text-slate">
           {reviewedCount} of {initialRows.length} reviewed
         </p>
-        {selected.size > 0 && (
-          <button type="button" onClick={handleBulkIgnore} className="min-h-11 rounded-lg border border-border px-3 text-sm text-slate">
-            Ignore {selected.size} selected
-          </button>
-        )}
       </div>
+
+      {selected.size > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-brass bg-brass-soft p-3">
+          <span className="text-sm font-medium text-ink">{selected.size} selected —</span>
+          <select
+            value={bulkPatch.ledger}
+            onChange={(e) => setBulkPatch((p) => ({ ...p, ledger: e.target.value as "family" | "business" }))}
+            className="min-h-9 rounded-lg border border-border bg-paper-raised px-2 text-xs text-ink"
+          >
+            <option value="family">Family</option>
+            <option value="business">Business</option>
+          </select>
+          <select
+            value={bulkPatch.kind}
+            onChange={(e) => setBulkPatch((p) => ({ ...p, kind: e.target.value as Kind }))}
+            className="min-h-9 rounded-lg border border-border bg-paper-raised px-2 text-xs text-ink"
+          >
+            <option value="household">Household</option>
+            <option value="client_payment">Client payment</option>
+            <option value="staff_payout">Staff payout</option>
+            <option value="job_expense">Job expense</option>
+          </select>
+          {bulkPatch.kind === "household" && (
+            <>
+              <select onChange={(e) => setBulkPatch((p) => ({ ...p, category: e.target.value }))} className="min-h-9 rounded-lg border border-border bg-paper-raised px-2 text-xs text-ink">
+                <option value="">Category</option>
+                {refData.categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select onChange={(e) => setBulkPatch((p) => ({ ...p, memberId: e.target.value }))} className="min-h-9 rounded-lg border border-border bg-paper-raised px-2 text-xs text-ink">
+                <option value="">Who</option>
+                {refData.members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          <button type="button" onClick={handleBulkClassify} className="min-h-9 rounded-lg bg-brass px-3 text-xs font-medium text-paper-raised">
+            Apply &amp; commit {selected.size}
+          </button>
+          <button type="button" onClick={handleBulkIgnore} className="min-h-9 rounded-lg border border-border px-3 text-xs text-slate">
+            Ignore {selected.size}
+          </button>
+        </div>
+      )}
 
       <div className="space-y-3">
         {rows.map((row) => {

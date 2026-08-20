@@ -1,12 +1,11 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
-import { createHouseholdEntry, type ActionResult } from "@/lib/actions/household";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { submitOrQueue } from "@/lib/offline-queue";
 import { parseQuickText, isQuickTextError } from "@/lib/quick-text";
 import type { EntryPreset } from "@/lib/queries/household";
 import { formatPaise } from "@/lib/money";
-
-const initialState: ActionResult = { error: null };
 
 interface Props {
   accounts: { id: string; label: string; isPrimary: boolean }[];
@@ -25,7 +24,7 @@ export function FamilyEntryForm({
   presets,
   backfillDefaultDate,
 }: Props) {
-  const [state, formAction, pending] = useActionState(createHouseholdEntry, initialState);
+  const router = useRouter();
   const [direction, setDirection] = useState<"expense" | "income">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -34,6 +33,9 @@ export function FamilyEntryForm({
   const [mode, setMode] = useState("cash");
   const [occurredOn, setOccurredOn] = useState(backfillDefaultDate);
   const [showBackdate, setShowBackdate] = useState(backfillDefaultDate !== new Date().toISOString().slice(0, 10));
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const [quickText, setQuickText] = useState("");
   const [quickError, setQuickError] = useState<string | null>(null);
@@ -59,6 +61,39 @@ export function FamilyEntryForm({
       if (match) setMemberId(match.id);
     }
     setQuickText("");
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const amountPaise = Math.round(Number(amount.replace(/,/g, "")) * 100);
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0 || !memberId || !accountId) return;
+
+    setPending(true);
+    setError(null);
+    setSavedMessage(null);
+
+    const result = await submitOrQueue({
+      accountId,
+      amountPaise,
+      direction,
+      category,
+      memberId,
+      mode,
+      note: null,
+      occurredOn,
+    });
+
+    setPending(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setSavedMessage(result.queued ? "Saved offline — will sync automatically." : "Entry recorded.");
+    setAmount("");
+    setCategory(null);
+    if (!result.queued) router.refresh();
   }
 
   return (
@@ -92,14 +127,7 @@ export function FamilyEntryForm({
         </div>
       )}
 
-      <form action={formAction} className="space-y-5">
-        <input type="hidden" name="direction" value={direction} />
-        <input type="hidden" name="accountId" value={accountId} />
-        <input type="hidden" name="memberId" value={memberId} />
-        <input type="hidden" name="mode" value={mode} />
-        <input type="hidden" name="occurredOn" value={occurredOn} />
-        <input type="hidden" name="category" value={category ?? ""} />
-
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div className="flex justify-center gap-2">
           <button
             type="button"
@@ -129,7 +157,6 @@ export function FamilyEntryForm({
             <span className="font-numeric text-3xl text-slate">₹</span>
             <input
               id="amount"
-              name="amount"
               autoFocus
               inputMode="decimal"
               placeholder="0"
@@ -227,9 +254,14 @@ export function FamilyEntryForm({
           </button>
         )}
 
-        {state.error && (
+        {error && (
           <p role="alert" className="text-sm text-maroon">
-            {state.error}
+            {error}
+          </p>
+        )}
+        {savedMessage && (
+          <p role="status" className="text-sm text-forest">
+            {savedMessage}
           </p>
         )}
 

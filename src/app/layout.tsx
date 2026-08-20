@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bitter, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { appConfig } from "@/config/app";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
 const bitter = Bitter({
@@ -46,7 +47,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${bitter.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-paper text-ink">{children}</body>
+      <body className="min-h-full flex flex-col bg-paper text-ink">
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }

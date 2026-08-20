@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BottomTabBar, Sidebar } from "@/components/nav/AppNav";
 import { navItemsFor } from "@/components/nav/nav-items";
+import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
 import type { Role } from "@/lib/auth";
 
 export function AppShell({
@@ -27,6 +28,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-dvh w-full">
+      <OfflineQueueIndicator />
       <Sidebar items={items} displayName={displayName} role={role} onSignOut={handleSignOut} />
       <div className="flex min-h-dvh flex-1 flex-col">
         <main className="flex-1 pb-20 sm:pb-0">{children}</main>
