@@ -11,6 +11,7 @@ import {
   type ColumnMapping,
   type ColumnKey,
 } from "@/lib/statements/parse";
+import { extractTableFromPdf, ScannedPdfError } from "@/lib/statements/pdf";
 import { createStatementUpload } from "@/lib/actions/statements";
 import { createClient } from "@/lib/supabase/client";
 
@@ -24,7 +25,7 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
   balance: "Balance",
 };
 
-type Step = "pick" | "map" | "uploading" | "done";
+type Step = "pick" | "extracting" | "map" | "uploading" | "done";
 
 export function UploadWizard({ accounts }: { accounts: { id: string; label: string }[] }) {
   const router = useRouter();
@@ -41,13 +42,27 @@ export function UploadWizard({ accounts }: { accounts: { id: string; label: stri
   async function handleFileSelected(selected: File) {
     setError(null);
 
-    if (/\.pdf$/i.test(selected.name)) {
-      setError("PDF text extraction isn't supported yet — export a CSV or XLSX from your bank instead.");
+    let h: string[];
+    let rows: unknown[][];
+
+    try {
+      if (/\.pdf$/i.test(selected.name)) {
+        setStep("extracting");
+        const extracted = await extractTableFromPdf(selected);
+        h = extracted.headers;
+        rows = extracted.rows;
+      } else {
+        const parsed = await readSpreadsheet(selected);
+        h = parsed.headers;
+        rows = parsed.rows;
+      }
+    } catch (err) {
+      setError(err instanceof ScannedPdfError ? err.message : "Couldn't read that file — try a CSV or XLSX export instead.");
+      setStep("pick");
       return;
     }
 
     setFile(selected);
-    const { headers: h, rows } = await readSpreadsheet(selected);
     setHeaders(h);
     setAllRows(rows);
     setPreviewRows(rows.slice(0, 10));
@@ -108,7 +123,7 @@ export function UploadWizard({ accounts }: { accounts: { id: string; label: stri
           </select>
         </div>
         <div>
-          <p className="mb-1 text-xs text-slate">Statement file (.csv or .xlsx)</p>
+          <p className="mb-1 text-xs text-slate">Statement file (.csv, .xlsx, or .pdf)</p>
           <input
             type="file"
             accept=".csv,.xlsx,.xls,.pdf"
@@ -191,6 +206,10 @@ export function UploadWizard({ accounts }: { accounts: { id: string; label: stri
         </div>
       </div>
     );
+  }
+
+  if (step === "extracting") {
+    return <p className="text-sm text-slate">Reading the PDF and pulling out the transaction table…</p>;
   }
 
   if (step === "uploading") {
