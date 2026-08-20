@@ -28,12 +28,19 @@ export async function getJobDetail(supabase: Client, jobId: string): Promise<Job
   const { data: job } = await supabase.from("jobs").select("*").eq("id", jobId).single();
   if (!job) return null;
 
-  const { data: transactions } = await supabase
-    .from("transactions")
-    .select("id, kind, occurred_on, amount, mode, category, note")
-    .eq("job_id", jobId)
-    .is("deleted_at", null)
-    .order("occurred_on", { ascending: false });
+  const [{ data: transactions }, { data: jobStaff }] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("id, kind, occurred_on, amount, mode, category, note")
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("occurred_on", { ascending: false }),
+    supabase
+      .from("job_staff")
+      .select("id, staff_id, role_label, agreed_fee, staff(name)")
+      .eq("job_id", jobId)
+      .is("deleted_at", null),
+  ]);
 
   const payments = (transactions ?? [])
     .filter((t) => t.kind === "client_payment")
@@ -42,12 +49,6 @@ export async function getJobDetail(supabase: Client, jobId: string): Promise<Job
   const expenses = (transactions ?? [])
     .filter((t) => t.kind === "job_expense")
     .map((t) => ({ id: t.id, occurredOn: t.occurred_on, amount: -t.amount, category: t.category, note: t.note }));
-
-  const { data: jobStaff } = await supabase
-    .from("job_staff")
-    .select("id, staff_id, role_label, agreed_fee, staff(name)")
-    .eq("job_id", jobId)
-    .is("deleted_at", null);
 
   const jobStaffIds = (jobStaff ?? []).map((js) => js.id);
   const { data: allocations } =

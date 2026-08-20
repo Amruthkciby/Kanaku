@@ -11,46 +11,50 @@ export interface StaffListRow {
   totalOwed: number;
 }
 
+// Was N+1 (one round trip per staff member, each doing two more round trips) -- with a handful
+// of staff that's still 10+ serial network calls, and every one of them pays full latency to the
+// Supabase region, not just query time. Now three queries total regardless of staff count:
+// staff, all their job_staff obligations, and all matching payout_allocations, joined in memory.
 export async function getStaffList(supabase: Client): Promise<StaffListRow[]> {
-  const { data: staff, error } = await supabase
-    .from("staff")
-    .select("id, name, phone, default_fee")
-    .is("deleted_at", null)
-    .order("name");
+  const [{ data: staff, error: staffError }, { data: obligations, error: obligationsError }] = await Promise.all([
+    supabase.from("staff").select("id, name, phone, default_fee").is("deleted_at", null).order("name"),
+    supabase.from("job_staff").select("id, staff_id, agreed_fee").is("deleted_at", null),
+  ]);
 
-  if (error) throw error;
+  if (staffError) throw staffError;
+  if (obligationsError) throw obligationsError;
 
-  const results: StaffListRow[] = [];
-  for (const s of staff ?? []) {
-    const owed = await getStaffTotalOwed(supabase, s.id);
-    results.push({ id: s.id, name: s.name, phone: s.phone, defaultFee: s.default_fee, totalOwed: owed });
-  }
-  return results;
-}
+  const obligationIds = (obligations ?? []).map((o) => o.id);
+  const { data: allocations, error: allocationsError } =
+    obligationIds.length > 0
+      ? await supabase
+          .from("payout_allocations")
+          .select("job_staff_id, amount, transactions!inner(deleted_at)")
+          .in("job_staff_id", obligationIds)
+          .is("deleted_at", null)
+          .is("transactions.deleted_at", null)
+      : { data: [] as { job_staff_id: string; amount: number }[], error: null };
 
-async function getStaffTotalOwed(supabase: Client, staffId: string): Promise<number> {
-  const { data: obligations } = await supabase
-    .from("job_staff")
-    .select("id, agreed_fee")
-    .eq("staff_id", staffId)
-    .is("deleted_at", null);
+  if (allocationsError) throw allocationsError;
 
-  const ids = (obligations ?? []).map((o) => o.id);
-  if (ids.length === 0) return 0;
-
-  const { data: allocations } = await supabase
-    .from("payout_allocations")
-    .select("job_staff_id, amount, transactions!inner(deleted_at)")
-    .in("job_staff_id", ids)
-    .is("deleted_at", null)
-    .is("transactions.deleted_at", null);
-
-  const paidById = new Map<string, number>();
+  const paidByJobStaff = new Map<string, number>();
   for (const a of allocations ?? []) {
-    paidById.set(a.job_staff_id, (paidById.get(a.job_staff_id) ?? 0) + a.amount);
+    paidByJobStaff.set(a.job_staff_id, (paidByJobStaff.get(a.job_staff_id) ?? 0) + a.amount);
   }
 
-  return (obligations ?? []).reduce((sum, o) => sum + (o.agreed_fee - (paidById.get(o.id) ?? 0)), 0);
+  const owedByStaff = new Map<string, number>();
+  for (const o of obligations ?? []) {
+    const paid = paidByJobStaff.get(o.id) ?? 0;
+    owedByStaff.set(o.staff_id, (owedByStaff.get(o.staff_id) ?? 0) + (o.agreed_fee - paid));
+  }
+
+  return (staff ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    phone: s.phone,
+    defaultFee: s.default_fee,
+    totalOwed: owedByStaff.get(s.id) ?? 0,
+  }));
 }
 
 export interface StaffLedgerEntry {

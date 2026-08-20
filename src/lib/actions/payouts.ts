@@ -21,15 +21,30 @@ export async function recordStaffPayout(_prev: ActionResult, formData: FormData)
   } = await supabase.auth.getUser();
   if (!user) return { error: "You're signed out — sign in and try again." };
 
-  const staffId = String(formData.get("staffId") ?? "");
+  let staffId = String(formData.get("staffId") ?? "");
+  const staffName = String(formData.get("staffName") ?? "").trim();
   const accountId = String(formData.get("accountId") ?? "");
   const mode = String(formData.get("mode") ?? "bank");
   const note = String(formData.get("note") ?? "").trim() || null;
   const occurredOn = String(formData.get("occurredOn") ?? new Date().toISOString().slice(0, 10));
   const rupees = Number(String(formData.get("amount") ?? "").replace(/,/g, ""));
 
-  if (!staffId || !accountId) return { error: "Pick a staff member and an account." };
+  if (!staffId && !staffName) return { error: "Pick a staff member or type a name." };
+  if (!accountId) return { error: "Pick an account." };
   if (!Number.isFinite(rupees) || rupees <= 0) return { error: "Enter an amount greater than zero." };
+
+  // A typed name with no matching staff member creates one on the fly, same as the client-name
+  // shortcut for payments. A brand-new staff member has no obligations yet, so the whole amount
+  // simply becomes an unallocated advance -- not an error, just visible as a credit.
+  if (!staffId) {
+    const { data: newStaff, error: staffError } = await supabase
+      .from("staff")
+      .insert({ name: staffName })
+      .select("id")
+      .single();
+    if (staffError) return { error: staffError.message };
+    staffId = newStaff.id;
+  }
 
   const amountPaise = Math.round(rupees * 100);
 
@@ -103,6 +118,7 @@ export async function recordStaffPayout(_prev: ActionResult, formData: FormData)
 
   revalidatePath("/business/staff");
   revalidatePath("/business");
+  revalidatePath("/family");
   return { error: null };
 }
 
@@ -118,5 +134,6 @@ export async function deleteStaffPayout(transactionId: string): Promise<ActionRe
   revalidatePath("/business/staff");
   if (txn?.staff_id) revalidatePath(`/business/staff/${txn.staff_id}`);
   revalidatePath("/business");
+  revalidatePath("/family");
   return { error: null };
 }

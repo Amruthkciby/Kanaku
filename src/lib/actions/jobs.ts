@@ -46,6 +46,7 @@ export async function createJob(_prev: ActionResult, formData: FormData): Promis
   if (error) return { error: error.message };
 
   revalidatePath("/business");
+  revalidatePath("/family");
   redirect(`/business/jobs/${job.id}`);
 }
 
@@ -56,6 +57,7 @@ export async function updateJobStatus(jobId: string, status: "open" | "settled" 
 
   revalidatePath("/business");
   revalidatePath(`/business/jobs/${jobId}`);
+  revalidatePath("/family");
   return { error: null };
 }
 
@@ -65,6 +67,7 @@ export async function softDeleteJob(jobId: string): Promise<ActionResult> {
   if (error) return { error: error.message };
 
   revalidatePath("/business");
+  revalidatePath("/family");
   return { error: null };
 }
 
@@ -75,15 +78,37 @@ export async function recordClientPayment(_prev: ActionResult, formData: FormDat
   } = await supabase.auth.getUser();
   if (!user) return { error: "You're signed out — sign in and try again." };
 
-  const jobId = String(formData.get("jobId") ?? "");
+  let jobId = String(formData.get("jobId") ?? "");
+  const clientName = String(formData.get("clientName") ?? "").trim();
   const accountId = String(formData.get("accountId") ?? "");
   const mode = String(formData.get("mode") ?? "bank");
   const note = String(formData.get("note") ?? "").trim() || null;
   const occurredOn = String(formData.get("occurredOn") ?? new Date().toISOString().slice(0, 10));
   const amount = parsePositiveRupees(formData.get("amount"));
 
-  if (!jobId || !accountId) return { error: "Missing job or account." };
+  if (!jobId && !clientName) return { error: "Pick a job or type a client name." };
+  if (!accountId) return { error: "Pick an account." };
   if (!amount || amount <= 0) return { error: "Enter an amount greater than zero." };
+
+  // No existing job picked -- a bare client name creates one on the fly (brief section 9.1's
+  // "under five seconds" goal extends to business entry too). Agreed amount defaults to this
+  // payment, i.e. "paid in full" until the owner corrects it on the job's own page once the real
+  // total is known -- a harmless default since it only ever needs raising, never lowering
+  // silently.
+  if (!jobId) {
+    const { data: newJob, error: jobError } = await supabase
+      .from("jobs")
+      .insert({
+        title: clientName,
+        client_name: clientName,
+        event_date: occurredOn,
+        agreed_amount: amount,
+      })
+      .select("id")
+      .single();
+    if (jobError) return { error: jobError.message };
+    jobId = newJob.id;
+  }
 
   const { error } = await supabase.from("transactions").insert({
     account_id: accountId,
@@ -101,6 +126,7 @@ export async function recordClientPayment(_prev: ActionResult, formData: FormDat
 
   revalidatePath(`/business/jobs/${jobId}`);
   revalidatePath("/business");
+  revalidatePath("/family");
   return { error: null };
 }
 
@@ -139,6 +165,7 @@ export async function recordJobExpense(_prev: ActionResult, formData: FormData):
 
   revalidatePath(`/business/jobs/${jobId}`);
   revalidatePath("/business");
+  revalidatePath("/family");
   return { error: null };
 }
 
@@ -164,5 +191,6 @@ export async function addJobStaff(_prev: ActionResult, formData: FormData): Prom
 
   revalidatePath(`/business/jobs/${jobId}`);
   revalidatePath("/business");
+  revalidatePath("/family");
   return { error: null };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { recordClientPayment, recordJobExpense } from "@/lib/actions/jobs";
 import { recordStaffPayout } from "@/lib/actions/payouts";
 import type { ActionResult } from "@/lib/actions/jobs";
@@ -70,22 +70,64 @@ function AmountAccountRow({ accounts }: { accounts: { id: string; label: string 
   );
 }
 
+/**
+ * Type a name, pick a match from the dropdown of existing ones, or just leave it as new text —
+ * the server creates a job/staff record on the fly for whatever doesn't match (brief's "under
+ * five seconds" goal extends to business entry: no separate "create a job first" detour).
+ */
+function NameCombo({
+  listId,
+  options,
+  idFieldName,
+  textFieldName,
+  placeholder,
+}: {
+  listId: string;
+  options: { id: string; label: string }[];
+  idFieldName: string;
+  textFieldName: string;
+  placeholder: string;
+}) {
+  const [text, setText] = useState("");
+  const byLowerLabel = useMemo(() => new Map(options.map((o) => [o.label.toLowerCase(), o.id])), [options]);
+  const matchedId = byLowerLabel.get(text.trim().toLowerCase()) ?? "";
+
+  return (
+    <div>
+      <input type="hidden" name={idFieldName} value={matchedId} />
+      <input
+        list={listId}
+        name={textFieldName}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={placeholder}
+        className="min-h-11 w-full rounded-lg border border-border bg-paper-raised px-3 text-sm text-ink"
+      />
+      <datalist id={listId}>
+        {options.map((o) => (
+          <option key={o.id} value={o.label} />
+        ))}
+      </datalist>
+      {text.trim() && !matchedId && <p className="mt-1 text-xs text-brass">New — will be added automatically.</p>}
+    </div>
+  );
+}
+
 function ClientPaymentFields({ accounts, jobs }: { accounts: { id: string; label: string }[]; jobs: { id: string; title: string }[] }) {
   const [state, formAction, pending] = useActionState(recordClientPayment, initialState);
   return (
     <form action={formAction} className="space-y-3">
-      <select name="jobId" defaultValue={jobs[0]?.id} className="min-h-11 w-full rounded-lg border border-border bg-paper-raised px-3 text-sm text-ink">
-        {jobs.length === 0 && <option value="">No jobs yet</option>}
-        {jobs.map((j) => (
-          <option key={j.id} value={j.id}>
-            {j.title}
-          </option>
-        ))}
-      </select>
+      <NameCombo
+        listId="job-names"
+        options={jobs.map((j) => ({ id: j.id, label: j.title }))}
+        idFieldName="jobId"
+        textFieldName="clientName"
+        placeholder="Client / job name"
+      />
       <AmountAccountRow accounts={accounts} />
       <input name="note" placeholder="Note (optional)" className="min-h-11 w-full rounded-lg border border-border bg-paper-raised px-3 text-sm text-ink" />
       {state.error && <p className="text-sm text-maroon">{state.error}</p>}
-      <button type="submit" disabled={pending || jobs.length === 0} className="min-h-12 w-full rounded-lg bg-brass text-base font-medium text-paper-raised disabled:opacity-50">
+      <button type="submit" disabled={pending} className="min-h-12 w-full rounded-lg bg-brass text-base font-medium text-paper-raised disabled:opacity-50">
         {pending ? "Saving…" : "Record payment"}
       </button>
     </form>
@@ -96,18 +138,17 @@ function StaffPayoutFields({ accounts, staff }: { accounts: { id: string; label:
   const [state, formAction, pending] = useActionState(recordStaffPayout, initialState);
   return (
     <form action={formAction} className="space-y-3">
-      <select name="staffId" defaultValue={staff[0]?.id} className="min-h-11 w-full rounded-lg border border-border bg-paper-raised px-3 text-sm text-ink">
-        {staff.length === 0 && <option value="">No staff yet</option>}
-        {staff.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+      <NameCombo
+        listId="staff-names"
+        options={staff.map((s) => ({ id: s.id, label: s.name }))}
+        idFieldName="staffId"
+        textFieldName="staffName"
+        placeholder="Staff name"
+      />
       <AmountAccountRow accounts={accounts} />
       <p className="text-xs text-slate">Allocated oldest-obligation-first automatically.</p>
       {state.error && <p className="text-sm text-maroon">{state.error}</p>}
-      <button type="submit" disabled={pending || staff.length === 0} className="min-h-12 w-full rounded-lg bg-brass text-base font-medium text-paper-raised disabled:opacity-50">
+      <button type="submit" disabled={pending} className="min-h-12 w-full rounded-lg bg-brass text-base font-medium text-paper-raised disabled:opacity-50">
         {pending ? "Saving…" : "Record payout"}
       </button>
     </form>
