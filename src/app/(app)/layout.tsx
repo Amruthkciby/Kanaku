@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   }
 
   return (
-    <AppShell role={profile.role} displayName={profile.displayName}>
+    <AppShell role={profile.role} displayName={profile.displayName} email={profile.email}>
       {children}
     </AppShell>
   );
