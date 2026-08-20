@@ -15,7 +15,7 @@ export default async function StaffAccountPage({ params }: { params: Promise<{ i
   const { data: accounts } = await supabase.from("accounts").select("id, label").order("is_primary", { ascending: false });
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:mx-auto lg:max-w-3xl">
       <PageHeader title={account.name} subtitle={account.phone ?? undefined} />
 
       <div className="mx-4 mb-4 flex flex-wrap items-center gap-4 sm:mx-6">

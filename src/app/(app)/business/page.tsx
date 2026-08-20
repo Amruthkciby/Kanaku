@@ -46,15 +46,15 @@ export default async function JobsPage({
         <NewJobForm eventTypes={(eventTypeRows ?? []).map((e) => e.name)} />
       </div>
 
-      <div className="mx-4 space-y-3 sm:mx-6">
+      <div className="mx-4 grid grid-cols-1 gap-3 sm:mx-6 lg:grid-cols-2 xl:grid-cols-3">
         {filtered.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-8 text-center text-slate">
+          <p className="rounded-xl border border-dashed border-border p-8 text-center text-slate lg:col-span-2 xl:col-span-3">
             No {filter === "all" ? "" : filter} jobs yet.
           </p>
         ) : (
           filtered.map((job) =>
             job.settled || job.status !== "open" ? (
-              <div key={job.jobId} className="rounded-xl border border-border bg-paper-raised">
+              <div key={job.jobId} className="rounded-xl border border-border bg-paper-raised lg:col-span-2 xl:col-span-3">
                 <JobCard job={job} />
               </div>
             ) : (

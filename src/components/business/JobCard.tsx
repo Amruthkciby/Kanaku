@@ -13,7 +13,7 @@ export function JobCard({ job }: { job: JobSummary }) {
     return (
       <Link
         href={`/business/jobs/${job.jobId}`}
-        className="flex items-center justify-between px-4 py-3 text-slate hover:text-ink sm:px-6"
+        className="flex items-center justify-between px-4 py-3 text-slate hover:text-ink sm:px-6 lg:col-span-2 xl:col-span-3"
       >
         <span>
           {job.title} <span className="text-sm">· {job.clientName}</span>

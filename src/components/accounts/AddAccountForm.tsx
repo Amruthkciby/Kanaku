@@ -11,7 +11,7 @@ export function AddAccountForm({ members }: { members: { id: string; name: strin
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="min-h-11 text-sm text-brass underline">
+      <button type="button" onClick={() => setOpen(true)} className="block min-h-11 text-left text-sm text-brass underline">
         Add an account
       </button>
     );

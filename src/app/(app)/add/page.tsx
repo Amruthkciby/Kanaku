@@ -44,26 +44,31 @@ export default async function AddPage() {
 
   return (
     <div className="pb-8">
-      <PageHeader title="Add" subtitle="Fast entry — under five seconds." />
+      {/* A data-entry form and a simple list both stay readable capped at a comfortable width --
+          stretching them edge to edge on a laptop/desktop just leaves the eye travelling further
+          than it needs to between a label and its value. */}
+      <div className="lg:mx-auto lg:max-w-3xl">
+        <PageHeader title="Add" subtitle="Fast entry — under five seconds." />
 
-      <div className="mx-4 sm:mx-6 space-y-6">
-        <UnifiedEntryForm
-          accounts={accountList}
-          members={memberList}
-          categories={categories}
-          defaultMemberId={defaultMemberId}
-          presets={presets}
-          backfillDefaultDate={backfillDefaultDate}
-          isOwner={owner}
-          jobs={(jobRows ?? []).map((j) => ({ id: j.id, title: j.title }))}
-          staff={(staffRows ?? []).map((s) => ({ id: s.id, name: s.name }))}
-        />
-        <CashReconciliation cashAccounts={cashAccounts} members={memberList} defaultMemberId={defaultMemberId} />
-      </div>
+        <div className="mx-4 space-y-6 sm:mx-6">
+          <UnifiedEntryForm
+            accounts={accountList}
+            members={memberList}
+            categories={categories}
+            defaultMemberId={defaultMemberId}
+            presets={presets}
+            backfillDefaultDate={backfillDefaultDate}
+            isOwner={owner}
+            jobs={(jobRows ?? []).map((j) => ({ id: j.id, title: j.title }))}
+            staff={(staffRows ?? []).map((s) => ({ id: s.id, name: s.name }))}
+          />
+          <CashReconciliation cashAccounts={cashAccounts} members={memberList} defaultMemberId={defaultMemberId} />
+        </div>
 
-      <div className="mt-8">
-        <h2 className="px-4 pb-2 text-sm font-medium text-slate sm:px-6">Recent entries</h2>
-        <RecentEntries entries={entries} categories={categories} members={memberList} />
+        <div className="mt-8">
+          <h2 className="px-4 pb-2 text-sm font-medium text-slate sm:px-6">Recent entries</h2>
+          <RecentEntries entries={entries} categories={categories} members={memberList} />
+        </div>
       </div>
     </div>
   );

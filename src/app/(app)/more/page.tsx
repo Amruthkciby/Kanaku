@@ -23,10 +23,10 @@ export default async function MorePage() {
   const balanceByAccount = new Map(balances.map((b) => [b.accountId, b.balance]));
 
   return (
-    <div>
+    <div className="lg:mx-auto lg:max-w-3xl">
       <PageHeader title="More" />
 
-      <div className="mx-4 sm:mx-6 space-y-6">
+      <div className="mx-4 space-y-6 sm:mx-6">
         <section className="rounded-xl border border-border bg-paper-raised p-4">
           <p className="font-medium text-ink">{profile?.displayName}</p>
           <p className="text-sm capitalize text-slate">{profile?.role}</p>

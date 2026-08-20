@@ -10,7 +10,7 @@ export default async function StaffListPage() {
   const staff = await getStaffList(supabase);
 
   return (
-    <div>
+    <div className="lg:mx-auto lg:max-w-3xl">
       <PageHeader title="Staff" subtitle="Who's owed what, across every job." />
 
       <div className="mx-4 mb-4 sm:mx-6">

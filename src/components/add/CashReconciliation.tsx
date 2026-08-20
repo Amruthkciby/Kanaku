@@ -21,7 +21,7 @@ export function CashReconciliation({
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="min-h-11 text-sm text-slate underline">
+      <button type="button" onClick={() => setOpen(true)} className="block min-h-11 text-left text-sm text-slate underline">
         Reconcile cash in hand
       </button>
     );

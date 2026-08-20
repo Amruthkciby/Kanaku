@@ -33,8 +33,8 @@ check("member sees no + Client chip", memberSeesClientChip === 0);
 check("member sees no + Staff chip", memberSeesStaffChip === 0);
 
 await page.fill("#amount", "150");
-await page.click('button:has-text("Fuel")');
-const memberHouseholdBtn = page.locator("button", { hasText: "Me" }).first();
+await page.getByRole("button", { name: "Fuel", exact: true }).click();
+const memberHouseholdBtn = page.getByRole("button", { name: "Me", exact: true }).first();
 await memberHouseholdBtn.click();
 await page.click('button:has-text("Save entry")');
 await page.waitForSelector("text=Entry recorded.", { timeout: 5000 });

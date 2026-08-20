@@ -34,8 +34,11 @@ export function AppShell({
       <div className="flex min-h-dvh w-full">
         <OfflineQueueIndicator />
         <Sidebar items={items} displayName={displayName} role={role} onSignOut={handleSignOut} />
-        <div className="flex min-h-dvh flex-1 flex-col">
-          <main className="flex-1 pb-20 sm:pb-0">{children}</main>
+        {/* min-w-0 is load-bearing: flex items default to min-width:auto, so without it a wide
+            chart deep inside (even one wrapped in its own overflow-x-auto) forces this whole
+            column wider instead of scrolling in place, pushing the page into horizontal scroll. */}
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+          <main className="min-w-0 flex-1 pb-20 sm:pb-0">{children}</main>
           <BottomTabBar items={items} />
         </div>
       </div>

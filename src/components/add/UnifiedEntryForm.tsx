@@ -377,7 +377,7 @@ export function UnifiedEntryForm({
             />
           </div>
         ) : (
-          <button type="button" onClick={() => setShowBackdate(true)} className="text-sm text-slate underline">
+          <button type="button" onClick={() => setShowBackdate(true)} className="block text-sm text-slate underline">
             Backfilling an earlier day?
           </button>
         )}

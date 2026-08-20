@@ -11,7 +11,7 @@ export function DrawingForm({ members }: { members: { id: string; name: string }
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="min-h-11 text-sm text-brass underline">
+      <button type="button" onClick={() => setOpen(true)} className="block min-h-11 text-left text-sm text-brass underline">
         Record a drawing (business → family)
       </button>
     );
@@ -49,7 +49,7 @@ export function CapitalContributionForm({ members }: { members: { id: string; na
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="min-h-11 text-sm text-brass underline">
+      <button type="button" onClick={() => setOpen(true)} className="block min-h-11 text-left text-sm text-brass underline">
         Record a capital contribution (family → business)
       </button>
     );

@@ -42,6 +42,7 @@ supabase/.branches
 
 # local verification screenshots
 .verify-shots
+.audit-shots
 .debug-*.png
 
 # typescript

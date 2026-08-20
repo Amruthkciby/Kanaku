@@ -1,4 +1,4 @@
-// Smoke test for the quick client-name / staff-name mapping added to the business Add flow.
+// Smoke test for the quick client-name / staff-name mapping on the unified Add screen.
 
 import { chromium } from "playwright";
 
@@ -19,14 +19,16 @@ await page.click('button[type="submit"]');
 await page.waitForURL("**/family");
 
 // ── quick client payment: brand new client name, no existing job ───
-await page.goto(`${BASE}/add?ledger=business`);
-await page.waitForSelector('button:has-text("Client payment")');
-await page.fill('input[name="clientName"]', "Fresh New Client XYZ");
-const newHint = await page.locator("text=New — will be added automatically.").count();
+await page.goto(`${BASE}/add`);
+await page.waitForSelector('button:has-text("+ Client")');
+await page.click('button:has-text("+ Client")');
+await page.fill('input[placeholder="Client name"]', "Fresh New Client XYZ");
+const newHint = await page.locator("text=New — added automatically.").count();
 check("shows 'new' hint for an unmatched name", newHint > 0);
 
-await page.fill('input[name="amount"]', "7500");
-await page.click('button:has-text("Record payment")');
+await page.click('button:has-text("Received")'); // a client payment is income
+await page.fill("#amount", "7500");
+await page.click('button:has-text("Save entry")');
 await page.waitForTimeout(1500);
 
 // Confirm a job was auto-created with that client name and the payment landed on it.
@@ -41,11 +43,11 @@ check("job detail shows the ₹7,500 payment", /7,500/.test(jobBody ?? ""));
 check("agreed amount defaulted to the payment (still to collect ₹0)", /Still to collect[\s\S]{0,40}₹0/.test(jobBody ?? "") || /₹0[\s\S]{0,10}Still to collect/.test(jobBody ?? ""));
 
 // ── quick staff payout: brand new staff name ────────────────────────
-await page.goto(`${BASE}/add?ledger=business`);
-await page.click('button:has-text("Staff payout")');
-await page.fill('input[name="staffName"]', "Brand New Staffer");
-await page.fill('input[name="amount"]', "3000");
-await page.click('button:has-text("Record payout")');
+await page.goto(`${BASE}/add`);
+await page.click('button:has-text("+ Staff")');
+await page.fill('input[placeholder="Staff name"]', "Brand New Staffer");
+await page.fill("#amount", "3000");
+await page.click('button:has-text("Save entry")');
 await page.waitForTimeout(1500);
 
 await page.goto(`${BASE}/business/staff`);
