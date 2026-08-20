@@ -13,7 +13,7 @@ export default async function ImportPage() {
 
   return (
     <div className="pb-8">
-      <PageHeader title="Statement import" subtitle="Parsed entirely on your device — the raw file is never uploaded." />
+      <PageHeader title="ബാങ്ക് സ്റ്റേറ്റ്മെന്റ്" subtitle="Parsed entirely on your device — the raw file is never uploaded." />
 
       <div className="mx-4 space-y-8 sm:mx-6">
         <UploadWizard accounts={accounts ?? []} />

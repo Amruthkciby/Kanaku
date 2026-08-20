@@ -37,7 +37,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             tone={job.stillToCollect > 0 ? "maroon" : "forest"}
           />
           <Stat label="Paid to staff" value={formatPaise(job.paidToStaff)} />
-          <Stat label="Job expenses" value={formatPaise(job.jobExpensesTotal)} />
+          <Stat label="Work expenses" value={formatPaise(job.jobExpensesTotal)} />
           <Stat label="Profit" value={formatPaise(job.profit)} tone={job.profit >= 0 ? "forest" : "maroon"} />
           <Stat label="Status" value={job.settled ? "Settled" : "Open"} tone={job.settled ? "forest" : undefined} />
         </section>
@@ -66,7 +66,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </section>
 
           <section>
-            <h2 className="mb-3 font-display text-lg text-ink">Job expenses</h2>
+            <h2 className="mb-3 font-display text-lg text-ink">Work expenses</h2>
             <RecordJobExpenseForm jobId={job.id} accounts={accountList} categories={categories} />
             <ul className="mt-3 divide-y divide-border rounded-xl border border-border bg-paper-raised">
               {job.expenses.length === 0 ? (

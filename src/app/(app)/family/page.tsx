@@ -74,7 +74,7 @@ export default async function DashboardPage({
   return (
     <div className="pb-8">
       <CashStrip />
-      <PageHeader title="Dashboard" subtitle="Income, spending, and who's spending it." />
+      <PageHeader title="ചുരുക്കം" subtitle="Income, spending, and who's spending it." />
 
       <div className="mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 sm:mx-6">
         <PeriodSelector current={preset} />

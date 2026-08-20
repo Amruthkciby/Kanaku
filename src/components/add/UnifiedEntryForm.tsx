@@ -3,13 +3,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { submitOrQueue } from "@/lib/offline-queue";
-import { recordClientPayment, recordJobExpense } from "@/lib/actions/jobs";
-import { recordStaffPayout } from "@/lib/actions/payouts";
 import { parseQuickText, isQuickTextError } from "@/lib/quick-text";
 import type { EntryPreset } from "@/lib/queries/household";
 import { formatPaise } from "@/lib/money";
-
-type ForType = "family" | "client" | "staff";
 
 interface Props {
   accounts: { id: string; label: string; isPrimary: boolean }[];
@@ -18,34 +14,17 @@ interface Props {
   defaultMemberId: string;
   presets: EntryPreset[];
   backfillDefaultDate: string;
-  isOwner: boolean;
-  jobs: { id: string; title: string }[];
-  staff: { id: string; name: string }[];
 }
 
-// One continuous entry screen for everyone — no separate "Business mode" to switch into. A
-// member only ever sees the household fields (Client/Staff aren't rendered for them at all,
-// matching what RLS already enforces). For the owner, tapping "Client" or "Staff" just swaps
-// what "Who" means; the family/business tagging still happens underneath so reporting and
-// safe-to-spend stay accurate, it's just no longer a visible fork in the screen.
-export function UnifiedEntryForm({
-  accounts,
-  members,
-  categories,
-  defaultMemberId,
-  presets,
-  backfillDefaultDate,
-  isOwner,
-  jobs,
-  staff,
-}: Props) {
+// Household-only entry screen -- business entries (client payments, job expenses, staff payouts)
+// live on the Work tab now, mapped by typed name the same way this form used to offer inline.
+// Keeping Add to just "spend/receive, for whom, how much" is what makes five-second entry hold.
+export function UnifiedEntryForm({ accounts, members, categories, defaultMemberId, presets, backfillDefaultDate }: Props) {
   const router = useRouter();
-  const [forType, setForType] = useState<ForType>("family");
   const [direction, setDirection] = useState<"expense" | "income">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [memberId, setMemberId] = useState(defaultMemberId);
-  const [name, setName] = useState(""); // client or staff name text
   const [accountId, setAccountId] = useState(accounts.find((a) => a.isPrimary)?.id ?? accounts[0]?.id ?? "");
   const [mode, setMode] = useState("cash");
   const [occurredOn, setOccurredOn] = useState(backfillDefaultDate);
@@ -58,23 +37,7 @@ export function UnifiedEntryForm({
   const [quickError, setQuickError] = useState<string | null>(null);
   const memberNames = useMemo(() => members.map((m) => m.name), [members]);
 
-  const nameOptions = forType === "client" ? jobs.map((j) => j.title) : forType === "staff" ? staff.map((s) => s.name) : [];
-  const nameMatch =
-    forType === "client"
-      ? jobs.find((j) => j.title.toLowerCase() === name.trim().toLowerCase())
-      : forType === "staff"
-        ? staff.find((s) => s.name.toLowerCase() === name.trim().toLowerCase())
-        : null;
-
-  function selectForType(next: ForType) {
-    setForType(next);
-    setError(null);
-    setName("");
-    if (next === "staff") setDirection("expense"); // you only ever pay staff, never receive from them
-  }
-
   function applyPreset(preset: EntryPreset) {
-    setForType("family");
     setAmount((preset.amount / 100).toString());
     setCategory(preset.category);
     setMemberId(preset.memberId);
@@ -87,7 +50,6 @@ export function UnifiedEntryForm({
       return;
     }
     setQuickError(null);
-    setForType("family");
     setAmount((parsed.amountPaise / 100).toString());
     setCategory(parsed.category);
     if (parsed.memberName) {
@@ -100,114 +62,62 @@ export function UnifiedEntryForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const amountPaise = Math.round(Number(amount.replace(/,/g, "")) * 100);
-    if (!Number.isFinite(amountPaise) || amountPaise <= 0 || !accountId) return;
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0 || !accountId || !memberId) return;
 
     setPending(true);
     setError(null);
     setSavedMessage(null);
 
-    if (forType === "family") {
-      if (!memberId) {
-        setPending(false);
-        return;
-      }
-      const result = await submitOrQueue({
-        accountId,
-        amountPaise,
-        direction,
-        category,
-        memberId,
-        mode,
-        note: null,
-        occurredOn,
-      });
-      setPending(false);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      setSavedMessage(result.queued ? "Saved offline — will sync automatically." : "Entry recorded.");
-      setAmount("");
-      setCategory(null);
-      if (!result.queued) router.refresh();
-      return;
-    }
-
-    if (!name.trim()) {
-      setPending(false);
-      setError(forType === "client" ? "Type a client name." : "Type a staff name.");
-      return;
-    }
-
-    const fd = new FormData();
-    fd.set("accountId", accountId);
-    fd.set("amount", amount);
-    fd.set("mode", mode);
-    fd.set("occurredOn", occurredOn);
-
-    let result: { error: string | null };
-    if (forType === "staff") {
-      fd.set("staffId", nameMatch?.id ?? "");
-      fd.set("staffName", name.trim());
-      result = await recordStaffPayout({ error: null }, fd);
-    } else if (direction === "income") {
-      fd.set("jobId", nameMatch?.id ?? "");
-      fd.set("clientName", name.trim());
-      result = await recordClientPayment({ error: null }, fd);
-    } else {
-      fd.set("jobId", nameMatch?.id ?? "");
-      fd.set("clientName", name.trim());
-      fd.set("category", category ?? "");
-      result = await recordJobExpense({ error: null }, fd);
-    }
-
+    const result = await submitOrQueue({
+      accountId,
+      amountPaise,
+      direction,
+      category,
+      memberId,
+      mode,
+      note: null,
+      occurredOn,
+    });
     setPending(false);
     if (result.error) {
       setError(result.error);
       return;
     }
-    setSavedMessage("Entry recorded.");
+    setSavedMessage(result.queued ? "Saved offline — will sync automatically." : "Entry recorded.");
     setAmount("");
-    setName("");
     setCategory(null);
-    router.refresh();
+    if (!result.queued) router.refresh();
   }
-
-  const showCategory = forType === "family" || (forType === "client" && direction === "expense");
 
   return (
     <div className="space-y-6">
-      {forType === "family" && (
-        <>
-          <form action={handleQuickTextSubmit} className="flex gap-2">
-            <input
-              name="quick"
-              value={quickText}
-              onChange={(e) => setQuickText(e.target.value)}
-              placeholder='Quick add: "500 fuel"'
-              className="min-h-11 flex-1 rounded-lg border border-border bg-paper-raised px-3.5 text-base text-ink focus-visible:outline-2 focus-visible:outline-brass"
-            />
-            <button type="submit" className="min-h-11 rounded-lg border border-border px-4 text-sm font-medium text-ink">
-              Fill
-            </button>
-          </form>
-          {quickError && <p className="text-sm text-maroon">{quickError}</p>}
+      <form action={handleQuickTextSubmit} className="flex gap-2">
+        <input
+          name="quick"
+          value={quickText}
+          onChange={(e) => setQuickText(e.target.value)}
+          placeholder='Quick add: "500 fuel"'
+          className="min-h-11 flex-1 rounded-lg border border-border bg-paper-raised px-3.5 text-base text-ink focus-visible:outline-2 focus-visible:outline-brass"
+        />
+        <button type="submit" className="min-h-11 rounded-lg border border-border px-4 text-sm font-medium text-ink">
+          Fill
+        </button>
+      </form>
+      {quickError && <p className="text-sm text-maroon">{quickError}</p>}
 
-          {presets.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {presets.map((preset, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => applyPreset(preset)}
-                  className="min-h-11 rounded-full border border-border bg-paper-raised px-3.5 text-sm text-ink"
-                >
-                  {formatPaise(preset.amount)} · {preset.category ?? "Other"}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
+      {presets.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {presets.map((preset, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => applyPreset(preset)}
+              className="min-h-11 rounded-full border border-border bg-paper-raised px-3.5 text-sm text-ink"
+            >
+              {formatPaise(preset.amount)} · {preset.category ?? "Other"}
+            </button>
+          ))}
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -215,8 +125,7 @@ export function UnifiedEntryForm({
           <button
             type="button"
             onClick={() => setDirection("expense")}
-            disabled={forType === "staff"}
-            className={`min-h-11 rounded-full px-5 text-sm font-medium disabled:opacity-40 ${
+            className={`min-h-11 rounded-full px-5 text-sm font-medium ${
               direction === "expense" ? "bg-maroon text-paper-raised" : "border border-border text-slate"
             }`}
           >
@@ -225,8 +134,7 @@ export function UnifiedEntryForm({
           <button
             type="button"
             onClick={() => setDirection("income")}
-            disabled={forType === "staff"}
-            className={`min-h-11 rounded-full px-5 text-sm font-medium disabled:opacity-40 ${
+            className={`min-h-11 rounded-full px-5 text-sm font-medium ${
               direction === "income" ? "bg-forest text-paper-raised" : "border border-border text-slate"
             }`}
           >
@@ -259,81 +167,34 @@ export function UnifiedEntryForm({
               <button
                 key={m.id}
                 type="button"
-                onClick={() => {
-                  selectForType("family");
-                  setMemberId(m.id);
-                }}
+                onClick={() => setMemberId(m.id)}
                 className={`min-h-11 rounded-full px-4 text-sm ${
-                  forType === "family" && memberId === m.id ? "bg-ink text-paper-raised" : "border border-border text-ink"
+                  memberId === m.id ? "bg-ink text-paper-raised" : "border border-border text-ink"
                 }`}
               >
                 {m.name}
               </button>
             ))}
-            {isOwner && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => selectForType("client")}
-                  className={`min-h-11 rounded-full px-4 text-sm ${
-                    forType === "client" ? "bg-brass text-paper-raised" : "border border-dashed border-brass text-brass"
-                  }`}
-                >
-                  + Client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => selectForType("staff")}
-                  className={`min-h-11 rounded-full px-4 text-sm ${
-                    forType === "staff" ? "bg-brass text-paper-raised" : "border border-dashed border-brass text-brass"
-                  }`}
-                >
-                  + Staff
-                </button>
-              </>
-            )}
           </div>
-
-          {forType !== "family" && (
-            <div className="mt-3">
-              <input
-                list={forType === "client" ? "quick-client-names" : "quick-staff-names"}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={forType === "client" ? "Client name" : "Staff name"}
-                className="min-h-11 w-full rounded-lg border border-border bg-paper-raised px-3.5 text-base text-ink"
-              />
-              <datalist id={forType === "client" ? "quick-client-names" : "quick-staff-names"}>
-                {nameOptions.map((n) => (
-                  <option key={n} value={n} />
-                ))}
-              </datalist>
-              {name.trim() && !nameMatch && <p className="mt-1 text-xs text-brass">New — added automatically.</p>}
-            </div>
-          )}
         </div>
 
-        {showCategory && (
-          <div>
-            <p className="mb-2 text-xs text-slate">Category</p>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory(c)}
-                  className={`min-h-11 rounded-full px-4 text-sm ${
-                    category === c ? "bg-brass text-paper-raised" : "border border-border text-ink"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
+        <div>
+          <p className="mb-2 text-xs text-slate">Category</p>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                className={`min-h-11 rounded-full px-4 text-sm ${
+                  category === c ? "bg-brass text-paper-raised" : "border border-border text-ink"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
           </div>
-        )}
-
-        {forType === "staff" && <p className="text-xs text-slate">Allocated oldest-obligation-first automatically.</p>}
+        </div>
 
         <div className="flex flex-wrap items-center gap-4">
           <div>
@@ -395,7 +256,7 @@ export function UnifiedEntryForm({
 
         <button
           type="submit"
-          disabled={pending || !amount || !accountId || (forType === "family" ? !memberId : !name.trim())}
+          disabled={pending || !amount || !accountId || !memberId}
           className="min-h-12 w-full rounded-lg bg-brass text-base font-medium text-paper-raised disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save entry"}

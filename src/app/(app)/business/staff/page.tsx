@@ -11,7 +11,7 @@ export default async function StaffListPage() {
 
   return (
     <div className="lg:mx-auto lg:max-w-3xl">
-      <PageHeader title="Staff" subtitle="Who's owed what, across every job." />
+      <PageHeader title="ജോലിക്കാർ" subtitle="Who's owed what, across every job." />
 
       <div className="mx-4 mb-4 sm:mx-6">
         <NewStaffForm />

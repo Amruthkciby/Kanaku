@@ -24,7 +24,7 @@ export default async function MorePage() {
 
   return (
     <div className="lg:mx-auto lg:max-w-3xl">
-      <PageHeader title="More" />
+      <PageHeader title="കൂടുതൽ" />
 
       <div className="mx-4 space-y-6 sm:mx-6">
         <section className="rounded-xl border border-border bg-paper-raised p-4">
@@ -68,16 +68,16 @@ export default async function MorePage() {
 
         {owner && (
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate">Business</h2>
+            <h2 className="mb-2 text-sm font-medium text-slate">ജോലി</h2>
             <ul className="divide-y divide-border rounded-xl border border-border bg-paper-raised">
               <li className="px-4 py-3">
                 <Link href="/business/staff" className="text-ink">
-                  Staff
+                  ജോലിക്കാർ
                 </Link>
               </li>
               <li className="px-4 py-3">
                 <Link href="/business/import" className="text-ink">
-                  Statement import
+                  ബാങ്ക് സ്റ്റേറ്റ്മെന്റ്
                 </Link>
               </li>
             </ul>

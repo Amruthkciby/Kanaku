@@ -32,8 +32,8 @@ const PAGES = [
   { path: "/login", auth: false, wait: "text=Kanakku" },
   { path: "/family", auth: true, wait: "text=Safe to spend" },
   { path: "/add", auth: true, wait: "#amount" },
-  { path: "/business", auth: true, wait: "text=Jobs" },
-  { path: "/business/staff", auth: true, wait: "text=Staff" },
+  { path: "/business", auth: true, wait: "text=ജോലി" },
+  { path: "/business/staff", auth: true, wait: "text=ജോലിക്കാർ" },
   { path: "/more", auth: true, wait: "text=Accounts" },
 ];
 

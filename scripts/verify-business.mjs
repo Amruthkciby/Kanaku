@@ -28,22 +28,22 @@ await login();
 
 // ── create two jobs with controlled event dates ─────────────────────
 await page.goto(`${BASE}/business`);
-await page.click('button:has-text("+ New job")');
+await page.click('button:has-text("+ New work")');
 await page.fill('input[name="title"]', "FIFO Test Job A");
 await page.fill('input[name="clientName"]', "Test Client A");
 await page.fill('input[name="eventDate"]', "2026-01-01");
 await page.fill('input[name="agreedAmount"]', "1000");
-await page.click('button:has-text("Create job")');
+await page.click('button:has-text("Create work")');
 await page.waitForURL("**/business/jobs/*");
 const jobAUrl = page.url();
 
 await page.goto(`${BASE}/business`);
-await page.click('button:has-text("+ New job")');
+await page.click('button:has-text("+ New work")');
 await page.fill('input[name="title"]', "FIFO Test Job B");
 await page.fill('input[name="clientName"]', "Test Client B");
 await page.fill('input[name="eventDate"]', "2026-02-01");
 await page.fill('input[name="agreedAmount"]', "1000");
-await page.click('button:has-text("Create job")');
+await page.click('button:has-text("Create work")');
 await page.waitForURL("**/business/jobs/*");
 const jobBUrl = page.url();
 

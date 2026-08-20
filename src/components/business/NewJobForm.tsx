@@ -16,7 +16,7 @@ export function NewJobForm({ eventTypes }: { eventTypes: string[] }) {
         onClick={() => setOpen(true)}
         className="min-h-11 rounded-full bg-brass px-4 text-sm font-medium text-paper-raised"
       >
-        + New job
+        + New work
       </button>
     );
   }
@@ -45,7 +45,7 @@ export function NewJobForm({ eventTypes }: { eventTypes: string[] }) {
       {state.error && <p className="text-sm text-maroon">{state.error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="min-h-11 rounded-lg bg-brass px-4 text-sm font-medium text-paper-raised">
-          {pending ? "Creating…" : "Create job"}
+          {pending ? "Creating…" : "Create work"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="min-h-11 rounded-lg px-4 text-sm text-slate">
           Cancel

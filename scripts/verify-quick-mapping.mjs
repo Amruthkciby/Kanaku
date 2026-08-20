@@ -1,4 +1,5 @@
-// Smoke test for the quick client-name / staff-name mapping on the unified Add screen.
+// Smoke test for the quick client-name / staff-name mapping on the Work tab's quick-entry form
+// (moved here from the Add screen, which is household-only now).
 
 import { chromium } from "playwright";
 
@@ -19,22 +20,23 @@ await page.click('button[type="submit"]');
 await page.waitForURL("**/family");
 
 // ── quick client payment: brand new client name, no existing job ───
-await page.goto(`${BASE}/add`);
-await page.waitForSelector('button:has-text("+ Client")');
-await page.click('button:has-text("+ Client")');
+await page.goto(`${BASE}/business`);
+await page.waitForSelector('button:has-text("+ Add / mark a work expense")');
+await page.click('button:has-text("+ Add / mark a work expense")');
 await page.fill('input[placeholder="Client name"]', "Fresh New Client XYZ");
 const newHint = await page.locator("text=New — added automatically.").count();
 check("shows 'new' hint for an unmatched name", newHint > 0);
 
-await page.click('button:has-text("Received")'); // a client payment is income
-await page.fill("#amount", "7500");
+// default direction on the quick form is "Received" for a client -- confirm, then submit
+await page.click('button:has-text("Received")');
+await page.fill('input[placeholder="0"]', "7500");
 await page.click('button:has-text("Save entry")');
 await page.waitForTimeout(1500);
 
 // Confirm a job was auto-created with that client name and the payment landed on it.
 await page.goto(`${BASE}/business?filter=all`);
 await page.waitForSelector("text=Fresh New Client XYZ", { timeout: 5000 });
-check("auto-created job appears in the jobs list", true);
+check("auto-created job appears in the work list", true);
 
 await page.click("text=Fresh New Client XYZ");
 await page.waitForURL("**/business/jobs/*");
@@ -43,10 +45,11 @@ check("job detail shows the ₹7,500 payment", /7,500/.test(jobBody ?? ""));
 check("agreed amount defaulted to the payment (still to collect ₹0)", /Still to collect[\s\S]{0,40}₹0/.test(jobBody ?? "") || /₹0[\s\S]{0,10}Still to collect/.test(jobBody ?? ""));
 
 // ── quick staff payout: brand new staff name ────────────────────────
-await page.goto(`${BASE}/add`);
-await page.click('button:has-text("+ Staff")');
+await page.goto(`${BASE}/business`);
+await page.click('button:has-text("+ Add / mark a work expense")');
+await page.click('button:has-text("Staff")');
 await page.fill('input[placeholder="Staff name"]', "Brand New Staffer");
-await page.fill("#amount", "3000");
+await page.fill('input[placeholder="0"]', "3000");
 await page.click('button:has-text("Save entry")');
 await page.waitForTimeout(1500);
 

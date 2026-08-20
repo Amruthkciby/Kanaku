@@ -52,7 +52,7 @@ async function loginAs(page, email, password) {
   page.on("pageerror", (e) => errors.push(`[mobile owner] ${e.message}`));
   await loginAs(page, "father@kanakku.local", "kanakku-owner");
   await page.waitForSelector("text=Safe to spend");
-  const hasBusinessTab = await page.locator("nav >> text=Jobs").count();
+  const hasBusinessTab = await page.locator("nav >> text=ജോലി").count();
   console.log(`mobile owner: Business tab present = ${hasBusinessTab > 0}`);
   await shot(page, "03-family-owner-mobile.png");
   await context.close();
@@ -65,11 +65,11 @@ async function loginAs(page, email, password) {
   page.on("pageerror", (e) => errors.push(`[desktop owner] ${e.message}`));
   await loginAs(page, "father@kanakku.local", "kanakku-owner");
   await page.waitForSelector("text=Safe to spend");
-  const hasBusinessTab = await page.locator("aside >> text=Jobs").count();
+  const hasBusinessTab = await page.locator("aside >> text=ജോലി").count();
   console.log(`desktop owner: Business tab present = ${hasBusinessTab > 0}`);
   await shot(page, "04-family-owner-desktop.png");
 
-  await page.click("aside >> text=Jobs");
+  await page.click("aside >> text=ജോലി");
   await page.waitForURL("**/business");
   await shot(page, "05-business-owner-desktop.png");
   await context.close();
@@ -82,7 +82,7 @@ async function loginAs(page, email, password) {
   page.on("pageerror", (e) => errors.push(`[mobile member] ${e.message}`));
   await loginAs(page, "me@kanakku.local", "kanakku-member");
   await page.waitForSelector("text=Safe to spend");
-  const hasBusinessTab = await page.locator("nav >> text=Jobs").count();
+  const hasBusinessTab = await page.locator("nav >> text=ജോലി").count();
   console.log(`mobile member: Business tab present = ${hasBusinessTab > 0} (should be false)`);
   await shot(page, "06-family-member-mobile.png");
 

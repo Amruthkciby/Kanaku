@@ -34,7 +34,7 @@ await page.waitForSelector("#amount");
 // Go offline, then submit an entry.
 await context.setOffline(true);
 await page.fill("#amount", "321");
-await page.click('button:has-text("Fuel")');
+await page.getByRole("button", { name: "Fuel", exact: true }).click();
 await page.click('button:has-text("Save entry")');
 
 await page.waitForSelector("text=Saved offline", { timeout: 5000 });
