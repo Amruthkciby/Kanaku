@@ -137,7 +137,8 @@ export async function recordJobExpense(_prev: ActionResult, formData: FormData):
   } = await supabase.auth.getUser();
   if (!user) return { error: "You're signed out — sign in and try again." };
 
-  const jobId = String(formData.get("jobId") ?? "");
+  let jobId = String(formData.get("jobId") ?? "");
+  const clientName = String(formData.get("clientName") ?? "").trim();
   const accountId = String(formData.get("accountId") ?? "");
   const category = String(formData.get("category") ?? "").trim() || null;
   const mode = String(formData.get("mode") ?? "cash");
@@ -145,8 +146,19 @@ export async function recordJobExpense(_prev: ActionResult, formData: FormData):
   const occurredOn = String(formData.get("occurredOn") ?? new Date().toISOString().slice(0, 10));
   const amount = parsePositiveRupees(formData.get("amount"));
 
-  if (!jobId || !accountId) return { error: "Missing job or account." };
+  if (!jobId && !clientName) return { error: "Pick a job or type a client name." };
+  if (!accountId) return { error: "Pick an account." };
   if (!amount || amount <= 0) return { error: "Enter an amount greater than zero." };
+
+  if (!jobId) {
+    const { data: newJob, error: jobError } = await supabase
+      .from("jobs")
+      .insert({ title: clientName, client_name: clientName, event_date: occurredOn, agreed_amount: 0 })
+      .select("id")
+      .single();
+    if (jobError) return { error: jobError.message };
+    jobId = newJob.id;
+  }
 
   const { error } = await supabase.from("transactions").insert({
     account_id: accountId,

@@ -2,22 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isOwner } from "@/lib/auth";
 import { getRecentHouseholdEntries, getEntryPresets, getBackfillDefaultDate } from "@/lib/queries/household";
 import { PageHeader } from "@/components/PageHeader";
-import { FamilyEntryForm } from "@/components/add/FamilyEntryForm";
+import { UnifiedEntryForm } from "@/components/add/UnifiedEntryForm";
 import { RecentEntries } from "@/components/add/RecentEntries";
 import { CashReconciliation } from "@/components/add/CashReconciliation";
-import { AddLedgerToggle } from "@/components/add/AddLedgerToggle";
-import { BusinessEntryForm } from "@/components/add/BusinessEntryForm";
 
-export default async function AddPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ ledger?: string }>;
-}) {
-  const { ledger: ledgerParam } = await searchParams;
+export default async function AddPage() {
   const supabase = await createClient();
   const profile = await getCurrentProfile();
   const owner = isOwner(profile);
-  const ledger = owner && ledgerParam === "business" ? "business" : "family";
 
   const [
     { data: accounts },
@@ -55,36 +47,24 @@ export default async function AddPage({
       <PageHeader title="Add" subtitle="Fast entry — under five seconds." />
 
       <div className="mx-4 sm:mx-6 space-y-6">
-        {owner && <AddLedgerToggle ledger={ledger} />}
-
-        {ledger === "family" ? (
-          <>
-            <FamilyEntryForm
-              accounts={accountList}
-              members={memberList}
-              categories={categories}
-              defaultMemberId={defaultMemberId}
-              presets={presets}
-              backfillDefaultDate={backfillDefaultDate}
-            />
-            <CashReconciliation cashAccounts={cashAccounts} members={memberList} defaultMemberId={defaultMemberId} />
-          </>
-        ) : (
-          <BusinessEntryForm
-            accounts={accountList}
-            jobs={(jobRows ?? []).map((j) => ({ id: j.id, title: j.title }))}
-            staff={(staffRows ?? []).map((s) => ({ id: s.id, name: s.name }))}
-            categories={categories}
-          />
-        )}
+        <UnifiedEntryForm
+          accounts={accountList}
+          members={memberList}
+          categories={categories}
+          defaultMemberId={defaultMemberId}
+          presets={presets}
+          backfillDefaultDate={backfillDefaultDate}
+          isOwner={owner}
+          jobs={(jobRows ?? []).map((j) => ({ id: j.id, title: j.title }))}
+          staff={(staffRows ?? []).map((s) => ({ id: s.id, name: s.name }))}
+        />
+        <CashReconciliation cashAccounts={cashAccounts} members={memberList} defaultMemberId={defaultMemberId} />
       </div>
 
-      {ledger === "family" && (
-        <div className="mt-8">
-          <h2 className="px-4 pb-2 text-sm font-medium text-slate sm:px-6">Recent entries</h2>
-          <RecentEntries entries={entries} categories={categories} members={memberList} />
-        </div>
-      )}
+      <div className="mt-8">
+        <h2 className="px-4 pb-2 text-sm font-medium text-slate sm:px-6">Recent entries</h2>
+        <RecentEntries entries={entries} categories={categories} members={memberList} />
+      </div>
     </div>
   );
 }
